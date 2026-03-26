@@ -37,8 +37,11 @@ const state = {
   previewTimer: null,
 };
 
-const HAN_CALLIGRAPHY_FONT =
-  '"STXingkai", "HanziPen SC", "Kaiti SC", "KaiTi", "DFKai-SB", "Songti SC", serif';
+const LISHU_FONT_FAMILY =
+  '"STLiti", "LiSu", "Baoli SC", "Songti SC", "Bitter", serif';
+const PIECE_FONT_FAMILY = LISHU_FONT_FAMILY;
+const RIVER_FONT_FAMILY = LISHU_FONT_FAMILY;
+const UI_FONT_FAMILY = LISHU_FONT_FAMILY;
 
 const boardElement = document.querySelector("#board");
 const paletteElement = document.querySelector("#palette");
@@ -62,16 +65,30 @@ const playSequenceButton = document.querySelector("#play-sequence");
 const downloadGifButton = document.querySelector("#download-gif");
 const copyGifButton = document.querySelector("#copy-gif");
 
-init();
+void init();
 
-function init() {
+async function init() {
   buildCoordinateLabels();
   buildPalette();
   buildBoard();
   loadFen(START_FEN);
   attachEventListeners();
   syncInputsFromState();
+  await ensureFontsReady();
   render();
+}
+
+async function ensureFontsReady() {
+  if (!document.fonts?.load) {
+    return;
+  }
+
+  await Promise.allSettled([
+    document.fonts.load(`700 32px ${PIECE_FONT_FAMILY}`, "帅"),
+    document.fonts.load(`700 32px ${PIECE_FONT_FAMILY}`, "砲"),
+    document.fonts.load(`700 32px ${RIVER_FONT_FAMILY}`, "楚河"),
+    document.fonts.load(`600 16px ${UI_FONT_FAMILY}`, "a9"),
+  ]);
 }
 
 function createEmptyBoard() {
@@ -989,6 +1006,7 @@ function isOnBoard(x, y) {
 }
 
 async function renderGif() {
+  await ensureFontsReady();
   const delay = Math.max(100, Number(delayInput.value) || 650);
   const endDelay = Math.max(0, Number(endDelayInput.value) || 0);
   const frames = buildGifFrames();
@@ -1103,13 +1121,13 @@ function drawBoardFrame(board, turn, highlightMove = null) {
   ctx.lineTo(metrics.originX + 3 * metrics.cell, metrics.originY + 9 * metrics.cell);
   ctx.stroke();
 
-  ctx.font = `700 ${metrics.riverFontSize}px ${HAN_CALLIGRAPHY_FONT}`;
+  ctx.font = `700 ${metrics.riverFontSize}px ${RIVER_FONT_FAMILY}`;
   ctx.fillStyle = "rgba(35, 24, 21, 0.65)";
   ctx.textAlign = "center";
   ctx.fillText("楚河", canvas.width / 2 - metrics.riverGap, metrics.originY + 4.55 * metrics.cell);
   ctx.fillText("汉界", canvas.width / 2 + metrics.riverGap, metrics.originY + 4.55 * metrics.cell);
 
-  ctx.font = `600 ${metrics.coordFontSize}px Bitter`;
+  ctx.font = `600 ${metrics.coordFontSize}px ${UI_FONT_FAMILY}`;
   FILES.forEach((file, index) => {
     ctx.fillText(file, metrics.originX + index * metrics.cell, metrics.topCoordY);
     ctx.fillText(file, metrics.originX + index * metrics.cell, metrics.bottomCoordY);
@@ -1133,7 +1151,7 @@ function drawBoardFrame(board, turn, highlightMove = null) {
     }
   }
 
-  ctx.font = `600 ${metrics.statusFontSize}px Bitter`;
+  ctx.font = `600 ${metrics.statusFontSize}px ${UI_FONT_FAMILY}`;
   ctx.fillStyle = "#2b1d13";
   ctx.textAlign = "left";
   ctx.fillText(`Turn: ${turn === "w" ? "Red" : "Black"}`, metrics.statusX, metrics.statusY);
@@ -1220,7 +1238,7 @@ function drawPiece(ctx, x, y, metrics, piece) {
   ctx.stroke();
 
   ctx.fillStyle = PIECE_META[piece].side === "red" ? "#9f1f1f" : "#23272f";
-  ctx.font = `700 ${metrics.pieceFontSize}px ${HAN_CALLIGRAPHY_FONT}`;
+  ctx.font = `700 ${metrics.pieceFontSize}px ${PIECE_FONT_FAMILY}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(PIECE_META[piece].glyph, x, y + metrics.cell * 0.014);

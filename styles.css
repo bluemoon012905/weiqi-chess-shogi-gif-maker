@@ -9,14 +9,15 @@
   --accent-soft: #dfe9e3;
   --panel: rgba(255, 250, 236, 0.92);
   --shadow: 0 22px 60px rgba(45, 30, 15, 0.18);
-  --han-calligraphy:
-    "STXingkai",
-    "HanziPen SC",
-    "Kaiti SC",
-    "KaiTi",
-    "DFKai-SB",
+  --ui-font-family:
+    "STLiti",
+    "LiSu",
+    "Baoli SC",
     "Songti SC",
+    "Bitter",
     serif;
+  --piece-font-family: var(--ui-font-family);
+  --river-font-family: var(--ui-font-family);
 }
 
 * {
@@ -25,7 +26,7 @@
 
 body {
   margin: 0;
-  font-family: "Bitter", serif;
+  font-family: var(--ui-font-family);
   color: var(--ink);
   min-height: 100vh;
   background:
@@ -222,6 +223,7 @@ button.status-pill {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 10' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23502e12' stroke-width='0.04' stroke-linecap='square'%3E%3Crect x='0.2' y='0.2' width='8.6' height='9.6' rx='0.22'/%3E%3Cpath d='M0.5 0.5H8.5M0.5 1.5H8.5M0.5 2.5H8.5M0.5 3.5H8.5M0.5 4.5H8.5M0.5 5.5H8.5M0.5 6.5H8.5M0.5 7.5H8.5M0.5 8.5H8.5M0.5 9.5H8.5'/%3E%3Cpath d='M0.5 0.5V9.5M1.5 0.5V4.5M1.5 5.5V9.5M2.5 0.5V4.5M2.5 5.5V9.5M3.5 0.5V4.5M3.5 5.5V9.5M4.5 0.5V4.5M4.5 5.5V9.5M5.5 0.5V4.5M5.5 5.5V9.5M6.5 0.5V4.5M6.5 5.5V9.5M7.5 0.5V4.5M7.5 5.5V9.5M8.5 0.5V9.5'/%3E%3Cpath d='M3.5 0.5L5.5 2.5M5.5 0.5L3.5 2.5M3.5 7.5L5.5 9.5M5.5 7.5L3.5 9.5'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -231,10 +233,11 @@ button.status-pill {
 .board::after {
   content: "楚河      汉界";
   position: absolute;
+  z-index: 0;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-family: var(--han-calligraphy);
+  font-family: var(--river-font-family);
   font-size: var(--river-font-size);
   letter-spacing: var(--river-letter-spacing);
   color: rgba(35, 24, 21, 0.55);
@@ -244,6 +247,7 @@ button.status-pill {
 
 .square {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -259,6 +263,8 @@ button.status-pill {
 
 .square::before {
   content: "";
+  position: relative;
+  z-index: 1;
   width: var(--marker-size);
   height: var(--marker-size);
   border-radius: 999px;
@@ -282,6 +288,7 @@ button.status-pill {
 
 .piece {
   position: absolute;
+  z-index: 2;
   width: var(--piece-disc-size);
   height: var(--piece-disc-size);
   display: flex;
@@ -294,7 +301,7 @@ button.status-pill {
   border: 2px solid rgba(80, 46, 18, 0.9);
   background: radial-gradient(circle at 30% 25%, #fff9ec, #ead39d 65%, #d6b171);
   box-shadow: 0 10px 18px rgba(60, 36, 14, 0.18);
-  font-family: var(--han-calligraphy);
+  font-family: var(--piece-font-family);
   font-size: var(--piece-font-size);
   font-weight: 700;
   transition: transform 160ms ease;
@@ -373,8 +380,9 @@ button.status-pill {
   border-radius: 999px;
   border: 2px solid rgba(80, 46, 18, 0.9);
   background: radial-gradient(circle at 30% 25%, #fff9ec, #ead39d 65%, #d6b171);
-  font-family: var(--han-calligraphy);
+  font-family: var(--piece-font-family);
   font-size: clamp(1.8rem, 3vw, 2.2rem);
+  font-weight: 700;
 }
 
 .palette-piece.red {
