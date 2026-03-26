@@ -1,7 +1,7 @@
-import { mountChess } from "./chess.js";
-import { mountGo } from "./go.js";
-import { mountShogi } from "./shogi.js";
-import { mountXiangqi } from "./xiangqi.js";
+import { mountChess } from "./games/chess/index.js";
+import { mountGo } from "./games/go/index.js";
+import { mountShogi } from "./games/shogi/index.js";
+import { mountXiangqi } from "./games/xiangqi/index.js";
 
 const MODES = [
   {

@@ -1,20 +1,13 @@
 export const UI_FONT_FAMILY = '"Bitter", "Georgia", serif';
 export const CHINESE_FONT_FAMILY = '"STLiti", "LiSu", "Baoli SC", "Songti SC", serif';
+export const XIANGQI_PIECE_FONT_FAMILY = '"STLiti", "SimLi", "LiSu", "Baoli SC", "Songti SC", serif';
 
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function deepClone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 export function createEmptyGrid(rows, cols, fill = null) {
   return Array.from({ length: rows }, () => Array(cols).fill(fill));
-}
-
-export function algebraicFiles(count) {
-  return Array.from({ length: count }, (_, index) => String.fromCharCode(97 + index));
 }
 
 export function renderGif({
@@ -200,21 +193,4 @@ export function createBoardCanvas(width = 720, height = 720) {
   canvas.width = width;
   canvas.height = height;
   return canvas;
-}
-
-export function fileIndexToLabel(index) {
-  return String.fromCharCode(97 + index);
-}
-
-export function rankIndexToChessLabel(index) {
-  return String(8 - index);
-}
-
-export function boardSquareName(x, y, size = 8) {
-  return `${fileIndexToLabel(x)}${size - y}`;
-}
-
-export function parseNumeric(value, fallback) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }

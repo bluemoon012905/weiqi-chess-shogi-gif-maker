@@ -10,6 +10,7 @@
   --shadow: 0 22px 60px rgba(45, 30, 15, 0.18);
   --ui-font-family: "Bitter", "Georgia", serif;
   --chinese-font-family: "STLiti", "LiSu", "Baoli SC", "Songti SC", serif;
+  --xiangqi-piece-font-family: "STLiti", "SimLi", "LiSu", "Baoli SC", "Songti SC", serif;
   --piece-font-family: var(--chinese-font-family);
   --river-font-family: var(--chinese-font-family);
 }
@@ -260,6 +261,10 @@ button:disabled {
 
 .board-xiangqi {
   background: linear-gradient(180deg, #f4dba7, #dbb573);
+}
+
+.mode-shell-xiangqi {
+  --piece-font-family: var(--xiangqi-piece-font-family);
 }
 
 .board-xiangqi::before {

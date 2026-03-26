@@ -1,13 +1,14 @@
 import {
   CHINESE_FONT_FAMILY,
   UI_FONT_FAMILY,
+  XIANGQI_PIECE_FONT_FAMILY,
   clamp,
   createEmptyGrid,
   formatMoveList,
   normalizeRange,
   renderGif,
   syncRangeInputs,
-} from "./shared.js";
+} from "../../core/shared.js";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
 const RANKS = ["9", "8", "7", "6", "5", "4", "3", "2", "1", "0"];
@@ -32,7 +33,7 @@ const PALETTE_ORDER = ["K", "A", "B", "N", "R", "C", "P", "k", "a", "b", "n", "r
 
 export function mountXiangqi(root) {
   root.innerHTML = `
-    <div class="mode-shell">
+    <div class="mode-shell mode-shell-xiangqi">
       <section class="board-panel">
         <div class="board-toolbar">
           <div class="toolbar-group">
@@ -1156,7 +1157,7 @@ export function mountXiangqi(root) {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = PIECE_META[piece].side === "red" ? "#9f1f1f" : "#23272f";
-    ctx.font = `700 ${metrics.pieceFontSize}px ${CHINESE_FONT_FAMILY}`;
+    ctx.font = `700 ${metrics.pieceFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(PIECE_META[piece].glyph, x, y + metrics.cell * 0.014);

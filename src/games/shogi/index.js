@@ -7,7 +7,7 @@ import {
   normalizeRange,
   renderGif,
   syncRangeInputs,
-} from "./shared.js";
+} from "../../core/shared.js";
 
 const THEMES = {
   character: {

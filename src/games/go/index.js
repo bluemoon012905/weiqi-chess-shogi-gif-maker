@@ -10,7 +10,7 @@ import {
   normalizeRange,
   renderGif,
   syncRangeInputs,
-} from "./shared.js";
+} from "../../core/shared.js";
 
 const GO_THEMES = {
   kaya: { board: "#d9b56f", line: "#5e431a", bg: "#efe1be" },

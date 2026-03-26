@@ -9,7 +9,7 @@ import {
   normalizeRange,
   renderGif,
   syncRangeInputs,
-} from "./shared.js";
+} from "../../core/shared.js";
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const PALETTE = ["K", "Q", "R", "B", "N", "P", "k", "q", "r", "b", "n", "p", "."];

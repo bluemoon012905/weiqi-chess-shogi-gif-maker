@@ -1,17 +1,36 @@
-# Xiangqi GIF Maker
+# Board Game GIF Maker
 
 Static browser app for GitHub Pages.
 
 Live page: https://bluemoon012905.github.io/weiqi-chess-shogi-Xiangqi-gif-maker/
 ## Features
 
-- Edit a Xiangqi board from scratch by placing or removing pieces on intersections.
-- Switch to play mode and make legal moves directly on the board.
-- Toggle the side to move from the board toolbar.
-- Import a game from Xiangqi FEN plus ICCS/UCCI coordinate moves such as `h2e2`.
-- Step through moves, preview the sequence, or undo the last move.
-- Render the position sequence to a GIF in the browser with configurable frame delay and end delay.
+- Xiangqi editor and playback with FEN plus ICCS/UCCI import.
+- Chess editor and PGN branch export workflow.
+- Weiqi / Go editor and SGF branch export workflow.
+- Shogi editor with SFEN/USI import, variant presets, and GIF export.
+- Render position sequences to GIFs in the browser with configurable timing.
 - Download the GIF or copy it to the clipboard in supported browsers.
+
+## Project structure
+
+```text
+src/
+  app.js
+  core/
+    shared.js
+  games/
+    chess/
+      index.js
+    go/
+      index.js
+    shogi/
+      index.js
+    xiangqi/
+      index.js
+```
+
+Each game now lives in its own folder and only depends on `src/core/shared.js` for generic UI/render helpers.
 
 ## Run locally
 
