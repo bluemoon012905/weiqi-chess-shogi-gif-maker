@@ -1,7 +1,7 @@
 export const UI_FONT_FAMILY = '"Bitter", "Georgia", serif';
 export const CHINESE_FONT_FAMILY = '"Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif';
 export const XIANGQI_PIECE_FONT_FAMILY =
-  '"STLiti", "华文隶书", "STLishu", "STLibian", "华文隶变", "LiSu", "SimLi", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif';
+  '"KaiTi", "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Kai", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif';
 
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));

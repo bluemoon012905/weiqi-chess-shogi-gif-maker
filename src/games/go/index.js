@@ -441,20 +441,11 @@ export function mountGo(root) {
   function getCropRect() {
     const crop = normalizeCropState();
     const metrics = getGoMetrics(canvas.width, canvas.height, crop.size, get("show-coords").checked);
-    const margin = metrics.cell * 0.55;
-    const left = metrics.originX + (crop.x1 - 1) * metrics.cell - margin;
-    const top = metrics.originY + (crop.y1 - 1) * metrics.cell - margin;
-    const right = metrics.originX + (crop.x2 - 1) * metrics.cell + margin;
-    const bottom = metrics.originY + (crop.y2 - 1) * metrics.cell + margin;
-    const x = Math.max(0, Math.floor(left));
-    const y = Math.max(0, Math.floor(top));
-    const safeRight = Math.min(canvas.width, Math.ceil(right));
-    const safeBottom = Math.min(canvas.height, Math.ceil(bottom));
     return {
-      x,
-      y,
-      width: Math.max(1, safeRight - x),
-      height: Math.max(1, safeBottom - y),
+      x: metrics.originX + (crop.x1 - 1) * metrics.cell - metrics.cell * 0.55,
+      y: metrics.originY + (crop.y1 - 1) * metrics.cell - metrics.cell * 0.55,
+      width: (crop.x2 - crop.x1 + 1) * metrics.cell + metrics.cell * 0.1,
+      height: (crop.y2 - crop.y1 + 1) * metrics.cell + metrics.cell * 0.1,
     };
   }
 

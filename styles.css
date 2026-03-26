@@ -10,7 +10,7 @@
   --shadow: 0 22px 60px rgba(45, 30, 15, 0.18);
   --ui-font-family: "Bitter", "Georgia", serif;
   --chinese-font-family: "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-  --xiangqi-piece-font-family: "STLiti", "华文隶书", "STLishu", "STLibian", "华文隶变", "LiSu", "SimLi", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --xiangqi-piece-font-family: "KaiTi", "Kaiti SC", "STKaiti", "BiauKai", "DFKai-SB", "Kai", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
   --piece-font-family: var(--chinese-font-family);
   --river-font-family: var(--chinese-font-family);
 }
@@ -250,11 +250,11 @@ button:disabled {
   width: 100%;
   aspect-ratio: 9 / 10;
   --cell-size: 11.111cqw;
-  --river-font-size: calc(var(--cell-size) * 0.8);
+  --river-font-size: calc(var(--cell-size) * 0.86);
   --river-letter-spacing: calc(var(--cell-size) * 0.035);
   --marker-size: calc(var(--cell-size) * 0.17);
   --piece-disc-size: calc(var(--cell-size) * 0.88);
-  --piece-font-size: calc(var(--piece-disc-size) * 0.45);
+  --piece-font-size: calc(var(--piece-disc-size) * 0.49);
   border-radius: 24px;
   overflow: hidden;
 }
@@ -377,7 +377,7 @@ button:disabled {
   box-shadow: 0 10px 18px rgba(60, 36, 14, 0.18);
   font-family: var(--piece-font-family);
   font-size: var(--piece-font-size);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .piece.red {
@@ -564,7 +564,7 @@ button:disabled {
   background: radial-gradient(circle at 30% 25%, #fff9ec, #ead39d 65%, #d6b171);
   font-family: var(--piece-font-family);
   font-size: clamp(1.55rem, 2.6vw, 1.9rem);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .palette-piece.chess-palette-piece {

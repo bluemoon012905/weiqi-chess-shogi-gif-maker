@@ -1039,7 +1039,7 @@ export function mountXiangqi(root) {
     ctx.lineTo(metrics.originX + 3 * metrics.cell, metrics.originY + 9 * metrics.cell);
     ctx.stroke();
 
-    ctx.font = `400 ${metrics.riverFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
+    ctx.font = `700 ${metrics.riverFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
     ctx.fillStyle = "rgba(35, 24, 21, 0.65)";
     ctx.textAlign = "center";
     ctx.fillText("楚河", canvas.width / 2 - metrics.riverGap, metrics.originY + 4.68 * metrics.cell);
@@ -1096,7 +1096,7 @@ export function mountXiangqi(root) {
       originX: frameX + cell * 0.5714,
       originY: frameY + cell * 0.5714,
       lineWidth: Math.max(2.2, cell * 0.043),
-      riverFontSize: cell * 0.72,
+      riverFontSize: cell * 0.78,
       riverGap: cell * 1.486,
       coordFontSize: cell * 0.343,
       topCoordY: frameY - cell * 0.057,
@@ -1115,7 +1115,7 @@ export function mountXiangqi(root) {
       pieceGradientInnerR: cell * 0.143,
       pieceGradientOuterR: cell * 0.557,
       pieceBorderWidth: Math.max(2.2, cell * 0.043),
-      pieceFontSize: cell * 0.54,
+      pieceFontSize: cell * 0.59,
     };
   }
 
@@ -1156,7 +1156,7 @@ export function mountXiangqi(root) {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = PIECE_META[piece].side === "red" ? "#9f1f1f" : "#23272f";
-    ctx.font = `400 ${metrics.pieceFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
+    ctx.font = `700 ${metrics.pieceFontSize}px ${XIANGQI_PIECE_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(PIECE_META[piece].glyph, x, y + metrics.cell * 0.014);
