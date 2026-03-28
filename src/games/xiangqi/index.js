@@ -127,17 +127,6 @@ export function mountXiangqi(root) {
             <button data-id="reset-start">Reset Start Position</button>
           </div>
           <div class="toolbar-group">
-            <label class="toolbar-select">
-              Theme
-              <select data-id="theme-select">
-                <option value="standard">Kaishu</option>
-                <option value="simplified">Simplified</option>
-                <option value="traditional">Traditional</option>
-                <option value="fangsong">FangSong</option>
-                <option value="lishu">LiShu</option>
-                <option value="heiti">Hei</option>
-              </select>
-            </label>
             <span class="status-pill" data-id="mode-pill">Editor</span>
             <button data-id="turn-pill" class="status-pill turn-red" type="button">Red To Move</button>
           </div>
@@ -166,11 +155,38 @@ export function mountXiangqi(root) {
             <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
           </label>
           <p class="helper-copy" data-id="playback-summary">The current board is the live working position.</p>
+          <h2>Export Range</h2>
+          <div class="inline-fields">
+            <label>
+              Start Ply
+              <input data-id="range-start" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              End Ply
+              <input data-id="range-end" type="number" min="0" step="1" value="0" />
+            </label>
+          </div>
+          <p class="helper-copy" data-id="range-summary">Exporting the current full move list.</p>
+          <label class="field-label">
+            Move List
+            <textarea data-id="move-list-preview" rows="8" readonly></textarea>
+          </label>
         </section>
       </section>
       <aside class="control-panel">
         <section class="card">
           <h2>Editor Palette</h2>
+          <label class="field-label">
+            Theme
+            <select data-id="theme-select">
+              <option value="standard">Kaishu</option>
+              <option value="simplified">Simplified</option>
+              <option value="traditional">Traditional</option>
+              <option value="fangsong">FangSong</option>
+              <option value="lishu">LiShu</option>
+              <option value="heiti">Hei</option>
+            </select>
+          </label>
           <div data-id="palette" class="palette"></div>
         </section>
         <section class="card">
@@ -201,24 +217,6 @@ export function mountXiangqi(root) {
             <button data-id="import-game">Import Game</button>
           </div>
           <p class="helper-copy">Supported moves use ICCS/UCCI coordinates such as <code>h2e2</code>.</p>
-        </section>
-        <section class="card">
-          <h2>Export Range</h2>
-          <div class="inline-fields">
-            <label>
-              Start Ply
-              <input data-id="range-start" type="number" min="0" step="1" value="0" />
-            </label>
-            <label>
-              End Ply
-              <input data-id="range-end" type="number" min="0" step="1" value="0" />
-            </label>
-          </div>
-          <p class="helper-copy" data-id="range-summary">Exporting the current full move list.</p>
-          <label class="field-label">
-            Move List
-            <textarea data-id="move-list-preview" rows="8" readonly></textarea>
-          </label>
         </section>
         <section class="card">
           <h2>GIF Export</h2>

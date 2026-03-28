@@ -17,9 +17,23 @@ const GO_THEMES = {
   cedar: { board: "#b9784e", line: "#4a2617", bg: "#edd3be", grain: ["rgba(255,245,235,0.06)", "rgba(90,44,23,0.1)"] },
   ashwood: { board: "#c9b08a", line: "#544632", bg: "#f1e7d8", grain: ["rgba(255,255,255,0.08)", "rgba(84,70,50,0.07)"] },
   moss: { board: "#95a97d", line: "#f5f7f0", bg: "#dbe2cf", grain: null },
-  sage: { board: "#bcc7b0", line: "#ffffff", bg: "#eef2e8", grain: null },
+  sage: { board: "#9caf88", line: "#ffffff", bg: "#eef2e8", grain: null },
   monochrome: { board: "#ffffff", line: "#000000", bg: "#ffffff", grain: null },
 };
+
+function emptyPosition(size) {
+  return { stones: new Map(), turn: "B", lastMove: null, moveNumber: 0, size };
+}
+
+function clonePosition(position) {
+  return {
+    stones: new Map(position.stones),
+    turn: position.turn,
+    lastMove: position.lastMove ? { ...position.lastMove } : null,
+    moveNumber: position.moveNumber,
+    size: position.size,
+  };
+}
 
 export function mountGo(root) {
   root.innerHTML = `
@@ -109,6 +123,11 @@ export function mountGo(root) {
             SGF
             <textarea data-id="sgf-input" rows="12" placeholder="(;GM[1]FF[4]SZ[19];B[pd];W[dd])"></textarea>
           </label>
+          <input data-id="sgf-file-input" type="file" accept=".sgf,.txt,text/plain,application/x-go-sgf" hidden />
+          <div data-id="sgf-dropzone" class="file-dropzone" tabindex="0" role="button" aria-label="Drop an SGF file here or browse for a file">
+            <strong>Drop an SGF file here</strong>
+            <span>or use browse to load a local file into the parser</span>
+          </div>
           <div class="inline-fields">
             <label>
               Frame Delay (ms)
@@ -117,10 +136,16 @@ export function mountGo(root) {
           </div>
           <div class="toolbar-group">
             <button data-id="load-sgf" class="primary-button">Parse SGF</button>
+            <button data-id="browse-sgf" type="button">Browse File</button>
           </div>
+          <p data-id="sgf-file-status" class="helper-copy">Paste SGF text, drop a file, or browse for one.</p>
         </section>
         <section class="card">
           <h2>Playback</h2>
+          <div class="toolbar-group">
+            <button data-id="preview-back" type="button">Back</button>
+            <button data-id="preview-forward" type="button">Forward</button>
+          </div>
           <label class="field-label">
             Preview Move
             <input data-id="preview-slider" type="range" min="0" max="0" value="0" />
@@ -226,6 +251,53 @@ export function mountGo(root) {
     render();
   });
   get("load-sgf").addEventListener("click", loadSgf);
+  get("browse-sgf").addEventListener("click", () => {
+    get("sgf-file-input").click();
+  });
+  get("sgf-file-input").addEventListener("change", async (event) => {
+    const [file] = Array.from(event.target.files || []);
+    if (!file) {
+      return;
+    }
+    await loadSgfFile(file);
+    event.target.value = "";
+  });
+  ["dragenter", "dragover"].forEach((type) => {
+    get("sgf-dropzone").addEventListener(type, (event) => {
+      event.preventDefault();
+      get("sgf-dropzone").classList.add("active");
+    });
+  });
+  ["dragleave", "dragend"].forEach((type) => {
+    get("sgf-dropzone").addEventListener(type, () => {
+      get("sgf-dropzone").classList.remove("active");
+    });
+  });
+  get("sgf-dropzone").addEventListener("drop", async (event) => {
+    event.preventDefault();
+    get("sgf-dropzone").classList.remove("active");
+    const [file] = Array.from(event.dataTransfer?.files || []);
+    if (!file) {
+      get("sgf-file-status").textContent = "Drop a local SGF file to load it.";
+      return;
+    }
+    await loadSgfFile(file);
+  });
+  get("sgf-dropzone").addEventListener("click", () => {
+    get("sgf-file-input").click();
+  });
+  get("sgf-dropzone").addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      get("sgf-file-input").click();
+    }
+  });
+  get("preview-back").addEventListener("click", () => {
+    stepPreview(-1);
+  });
+  get("preview-forward").addEventListener("click", () => {
+    stepPreview(1);
+  });
   get("preview-slider").addEventListener("input", () => {
     state.previewMove = clamp(Number(get("preview-slider").value) || 0, 0, getActiveHistory().length);
     render();
@@ -283,20 +355,6 @@ export function mountGo(root) {
     return { id: "root", label: "root", children: [], parent: null, props: {}, initialState: null };
   }
 
-  function emptyPosition(size) {
-    return { stones: new Map(), turn: "B", lastMove: null, moveNumber: 0, size };
-  }
-
-  function clonePosition(position) {
-    return {
-      stones: new Map(position.stones),
-      turn: position.turn,
-      lastMove: position.lastMove ? { ...position.lastMove } : null,
-      moveNumber: position.moveNumber,
-      size: position.size,
-    };
-  }
-
   function buildPalette() {
     const palette = get("palette");
     palette.innerHTML = "";
@@ -338,18 +396,35 @@ export function mountGo(root) {
 
   function loadSgf() {
     try {
-      const parsed = parseSgf(get("sgf-input").value, Number(get("board-size").value) || 19);
-      state.tree = parsed.root;
-      state.boardSize = parsed.size;
-      get("board-size").value = String(parsed.size);
-      state.branchPaths = enumerateBranchPaths(parsed.root);
-      state.branchIndex = 0;
-      state.source = "sgf";
-      resetCropToBoard(parsed.size);
-      setCurrentBranch();
-      get("position-summary").textContent = `SGF parsed for ${parsed.size}x${parsed.size}. ${state.branchPaths.length} branch${state.branchPaths.length === 1 ? "" : "es"} available.`;
+      loadSgfText(get("sgf-input").value);
     } catch (error) {
       window.alert(error.message);
+    }
+  }
+
+  function loadSgfText(sgfText) {
+    const parsed = parseSgf(sgfText, Number(get("board-size").value) || 19);
+    state.tree = parsed.root;
+    state.boardSize = parsed.size;
+    get("board-size").value = String(parsed.size);
+    state.branchPaths = enumerateBranchPaths(parsed.root);
+    state.branchIndex = 0;
+    state.source = "sgf";
+    resetCropToBoard(parsed.size);
+    setCurrentBranch();
+    get("sgf-file-status").textContent = `Loaded ${parsed.size}x${parsed.size} SGF with ${state.branchPaths.length} branch${state.branchPaths.length === 1 ? "" : "es"}.`;
+    get("position-summary").textContent = `SGF parsed for ${parsed.size}x${parsed.size}. ${state.branchPaths.length} branch${state.branchPaths.length === 1 ? "" : "es"} available.`;
+  }
+
+  async function loadSgfFile(file) {
+    try {
+      const text = await file.text();
+      get("sgf-input").value = text;
+      loadSgfText(text);
+      get("sgf-file-status").textContent = `Loaded ${file.name}.`;
+    } catch (error) {
+      get("sgf-file-status").textContent = "Could not read that SGF file.";
+      window.alert(error.message || "Could not read that SGF file.");
     }
   }
 
@@ -405,6 +480,11 @@ export function mountGo(root) {
     get("range-end").value = String(total);
   }
 
+  function stepPreview(direction) {
+    state.previewMove = clamp(state.previewMove + direction, 0, getActiveHistory().length);
+    render();
+  }
+
   function render() {
     renderPalette();
     renderBranchTree();
@@ -413,6 +493,8 @@ export function mountGo(root) {
     const previewSlider = get("preview-slider");
     previewSlider.max = String(activeHistory.length);
     previewSlider.value = String(state.previewMove);
+    get("preview-back").disabled = state.previewMove <= 0;
+    get("preview-forward").disabled = state.previewMove >= activeHistory.length;
     syncRangeInputs(get("range-start"), get("range-end"), previewSlider, activeHistory.length);
     normalizeExportInputs();
     get("mode-pill").textContent = state.uiMode === "edit" ? "Editor" : "Play";
@@ -969,14 +1051,15 @@ function enumerateBranchPaths(root) {
 
 
 function parseSgf(sgf, fallbackSize) {
-  if (!sgf.trim()) {
+  const source = String(sgf || "").replace(/^\uFEFF/, "").trim();
+  if (!source) {
     throw new Error("Paste an SGF first.");
   }
   let index = 0;
   let sequence = 0;
 
   function skipWhitespace() {
-    while (/\s/.test(sgf[index] || "")) {
+    while (/\s/.test(source[index] || "")) {
       index += 1;
     }
   }
@@ -984,10 +1067,10 @@ function parseSgf(sgf, fallbackSize) {
   function parseValue() {
     let value = "";
     index += 1;
-    while (index < sgf.length) {
-      const char = sgf[index];
+    while (index < source.length) {
+      const char = source[index];
       if (char === "\\") {
-        value += sgf[index + 1] || "";
+        value += source[index + 1] || "";
         index += 2;
         continue;
       }
@@ -1005,14 +1088,14 @@ function parseSgf(sgf, fallbackSize) {
     const node = { id: `go-${sequence += 1}`, label: "", children: [], parent, props: {} };
     while (true) {
       skipWhitespace();
-      const identMatch = /^[A-Za-z]+/.exec(sgf.slice(index));
+      const identMatch = /^[A-Za-z]+/.exec(source.slice(index));
       if (!identMatch) {
         break;
       }
       const key = identMatch[0];
       index += key.length;
       node.props[key] = [];
-      while (sgf[index] === "[") {
+      while (source[index] === "[") {
         node.props[key].push(parseValue());
       }
     }
@@ -1022,15 +1105,15 @@ function parseSgf(sgf, fallbackSize) {
 
   function parseTree(parent = null) {
     skipWhitespace();
-    if (sgf[index] !== "(") {
+    if (source[index] !== "(") {
       throw new Error("Invalid SGF tree.");
     }
     index += 1;
     let currentParent = parent;
     let treeRoot = null;
-    while (index < sgf.length) {
+    while (index < source.length) {
       skipWhitespace();
-      if (sgf[index] === ";") {
+      if (source[index] === ";") {
         index += 1;
         const node = parseNode(currentParent);
         if (!treeRoot) {
@@ -1040,9 +1123,9 @@ function parseSgf(sgf, fallbackSize) {
           currentParent.children.push(node);
         }
         currentParent = node;
-      } else if (sgf[index] === "(") {
+      } else if (source[index] === "(") {
         parseTree(currentParent);
-      } else if (sgf[index] === ")") {
+      } else if (source[index] === ")") {
         index += 1;
         break;
       } else {
@@ -1053,10 +1136,15 @@ function parseSgf(sgf, fallbackSize) {
   }
 
   const parsedRoot = parseTree();
+  skipWhitespace();
   const size = Number(parsedRoot?.props?.SZ?.[0] || fallbackSize || 19);
   const root = { id: "root", label: "root", parent: null, children: [], props: {}, initialState: buildInitialState(parsedRoot, size) };
   if (parsedRoot) {
-    attachChildren(root, parsedRoot);
+    if (hasMoveProps(parsedRoot.props)) {
+      attachChildren(root, parsedRoot);
+    } else {
+      parsedRoot.children.forEach((child) => attachChildren(root, child));
+    }
   }
   return { root, size };
 }
@@ -1078,6 +1166,10 @@ function buildInitialState(sgfRoot, size) {
     }
   }
   return state;
+}
+
+function hasMoveProps(props) {
+  return Boolean(props?.B || props?.W);
 }
 
 function buildStatesForPath(path, initialState) {
@@ -1196,7 +1288,12 @@ function sgfPointToCoords(point) {
   if (!point || point.length < 2) {
     return null;
   }
-  return { x: point.charCodeAt(0) - 97, y: point.charCodeAt(1) - 97 };
+  const x = point.charCodeAt(0) - 97;
+  const y = point.charCodeAt(1) - 97;
+  if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0) {
+    return null;
+  }
+  return { x, y };
 }
 
 function toSgfPoint(x, y) {

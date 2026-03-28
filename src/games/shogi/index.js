@@ -141,8 +141,8 @@ export function mountShogi(root) {
             <textarea data-id="sfen-input" rows="3" placeholder="${STANDARD_SFEN}"></textarea>
           </label>
           <label class="field-label">
-            Moves (USI)
-            <textarea data-id="moves-input" rows="8" placeholder="7g7f 3c3d 2g2f"></textarea>
+            Moves (USI / KIF)
+            <textarea data-id="moves-input" rows="8" placeholder="7g7f 3c3d 2g2f&#10;or paste a KIF game record"></textarea>
           </label>
           <div class="inline-fields">
             <label>
@@ -194,6 +194,7 @@ export function mountShogi(root) {
       moves: [],
       paletteSelection: ".",
       selectedSquare: null,
+      selectedHand: null,
       legalMoves: [],
     },
     previewMove: 0,
@@ -345,19 +346,6 @@ export function mountShogi(root) {
     });
   }
 
-  function clonePosition(position) {
-    return {
-      board: position.board.map((row) => row.map((piece) => (piece ? { ...piece } : null))),
-      cols: position.cols,
-      rows: position.rows,
-      promotionZoneDepth: position.promotionZoneDepth,
-      turn: position.turn,
-      hands: { b: { ...position.hands.b }, w: { ...position.hands.w } },
-      handKinds: [...(position.handKinds || HAND_ORDER)],
-      moveNumber: position.moveNumber,
-    };
-  }
-
   function getActiveMoves() {
     return state.source === "manual" ? state.manual.moves : state.importedMoves;
   }
@@ -384,22 +372,23 @@ export function mountShogi(root) {
 
   function clearSelection() {
     state.manual.selectedSquare = null;
+    state.manual.selectedHand = null;
     state.manual.legalMoves = [];
   }
 
-  function loadGame() {
+function loadGame() {
     try {
       const variant = get("variant-select").value;
       const start = get("sfen-input").value.trim() ? parseSfen(get("sfen-input").value.trim()) : loadVariantPosition(variant);
       applyVariantGeometry(start, variant);
-      const moveTokens = get("moves-input").value.trim().split(/[\s,]+/).filter(Boolean);
+      const importedMoves = parseImportedMoves(get("moves-input").value, start);
       const positions = [clonePosition(start)];
-      moveTokens.forEach((token) => {
-        positions.push(applyUsiMove(clonePosition(positions[positions.length - 1]), token));
+      importedMoves.forEach((move) => {
+        positions.push(applyUsiMove(clonePosition(positions[positions.length - 1]), move.usi));
       });
       state.source = "imported";
       state.importedPositions = positions;
-      state.importedMoves = moveTokens.map((usi) => ({ usi, label: usi }));
+      state.importedMoves = importedMoves;
       resetRangeInputs();
       state.previewMove = 0;
       clearSelection();
@@ -482,6 +471,7 @@ export function mountShogi(root) {
       getLishogiImage,
       showTurnIndicator: get("show-turn").checked,
       selectedSquare: state.manual.selectedSquare,
+      selectedHand: state.manual.selectedHand,
       legalMoves: state.manual.legalMoves,
     });
   }
@@ -497,7 +487,23 @@ export function mountShogi(root) {
       return;
     }
     if (!square) {
-      if (state.uiMode !== "edit" || !handSlot) {
+      if (!handSlot) {
+        return;
+      }
+      if (state.uiMode !== "edit") {
+        const active = clonePosition(state.manual.positions[state.previewMove] || state.manual.positions[0]);
+        if (handSlot.side !== active.turn || !(active.hands[handSlot.side][handSlot.kind] > 0)) {
+          clearSelection();
+          render();
+          return;
+        }
+        state.manual.selectedSquare = null;
+        state.manual.selectedHand = handSlot;
+        state.manual.legalMoves = generateShogiDrops(active, handSlot.kind).map((drop) => ({
+          ...drop,
+          fromHand: true,
+        }));
+        render();
         return;
       }
       const next = editablePosition;
@@ -554,14 +560,16 @@ export function mountShogi(root) {
     }
 
     const active = clonePosition(state.manual.positions[state.previewMove] || state.manual.positions[0]);
-    if (state.manual.selectedSquare) {
+    if (state.manual.selectedSquare || state.manual.selectedHand) {
       const move = state.manual.legalMoves.find((candidate) => candidate.to.x === square.x && candidate.to.y === square.y);
       if (move) {
         if (state.previewMove < state.manual.moves.length) {
           state.manual.moves = state.manual.moves.slice(0, state.previewMove);
         }
         let usi = move.usi;
-        if (move.mustPromote) {
+        if (move.fromHand) {
+          // drop move, no promotion branch
+        } else if (move.mustPromote) {
           usi += "+";
         } else if (move.canPromote) {
           const shouldPromoteMove = window.confirm("Promote this piece?");
@@ -583,6 +591,7 @@ export function mountShogi(root) {
       render();
       return;
     }
+    state.manual.selectedHand = null;
     state.manual.selectedSquare = square;
     state.manual.legalMoves = generateShogiMoves(active, square.x, square.y);
     render();
@@ -600,6 +609,8 @@ export function mountShogi(root) {
         lishogiPack: getSelectedLishogiPack(),
         getLishogiImage,
         showTurnIndicator: get("show-turn").checked,
+        handPieceScale: 1.4,
+        handGapExtra: 16,
       });
       const cropRect = getShogiContentRect(frameCanvas, position);
       const outputSize = getShogiOutputSize(cropRect, 720);
@@ -660,7 +671,7 @@ export function mountShogi(root) {
 }
 
 function drawShogiBoard(ctx, canvas, position, options) {
-  const metrics = getShogiMetrics(canvas.width, canvas.height, position);
+  const metrics = getShogiMetrics(canvas.width, canvas.height, position, options);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = options.theme.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -714,11 +725,15 @@ function drawShogiBoard(ctx, canvas, position, options) {
     theme: options.theme,
     lishogiPack: options.lishogiPack,
     getLishogiImage: options.getLishogiImage,
+    handPieceScale: options.handPieceScale,
+    selectedHand: options.selectedHand,
   });
   drawHandColumn(ctx, metrics, position.hands.b, "b", {
     theme: options.theme,
     lishogiPack: options.lishogiPack,
     getLishogiImage: options.getLishogiImage,
+    handPieceScale: options.handPieceScale,
+    selectedHand: options.selectedHand,
   });
 
   if (options.showTurnIndicator) {
@@ -737,13 +752,22 @@ function drawHandColumn(ctx, metrics, hands, side, options) {
   handKinds.forEach((kind, index) => {
     const count = hands[kind] || 0;
     const centerY = startY + index * metrics.handSlotGap;
+    if (options.selectedHand?.side === side && options.selectedHand?.kind === kind) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(168, 54, 35, 0.72)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(centerX - slotSize * 0.7, centerY - slotSize * 0.7, slotSize * 1.4, slotSize * 1.4, 12);
+      ctx.stroke();
+      ctx.restore();
+    }
     drawShogiPiece(ctx, centerX, centerY, slotSize, side, {
       label: options.theme.render(kind),
       image: options.getLishogiImage(options.lishogiPack, side, kind),
       promoted: false,
       dimmed: count === 0,
       count: count > 0 ? `x${count}` : "",
-      scale: 2,
+      scale: options.handPieceScale || 2,
     });
   });
 }
@@ -804,7 +828,7 @@ function drawShogiPiece(ctx, centerX, centerY, cell, side, pieceVisual) {
   }
 }
 
-function getShogiMetrics(width, height, position) {
+function getShogiMetrics(width, height, position, options = {}) {
   const handKinds = getHandKinds(position);
   const sideReserve = 220;
   const usableWidth = width - sideReserve;
@@ -815,7 +839,7 @@ function getShogiMetrics(width, height, position) {
   const originX = (width - boardWidth) / 2;
   const originY = (height - boardHeight) / 2;
   const handSlotSize = Math.max(40, Math.min(56, cell * 0.92));
-  const targetExtraGap = 72;
+  const targetExtraGap = options.handGapExtra ?? 72;
   const availableHandHeight = Math.min(height - 48, boardHeight + 40);
   const maxExtraGap =
     handKinds.length > 1
@@ -840,7 +864,7 @@ function getShogiMetrics(width, height, position) {
 }
 
 function getShogiContentRect(canvas, position) {
-  const metrics = getShogiMetrics(canvas.width, canvas.height, position);
+  const metrics = getShogiMetrics(canvas.width, canvas.height, position, { handGapExtra: 16 });
   const handKinds = getHandKinds(position);
   const padX = metrics.handSlotSize * 0.8;
   const padTop = 36;
@@ -868,6 +892,19 @@ function getShogiOutputSize(cropRect, maxSide = 720) {
   return {
     width: Math.round(cropRect.width * scale),
     height: Math.round(cropRect.height * scale),
+  };
+}
+
+function clonePosition(position) {
+  return {
+    board: position.board.map((row) => row.map((piece) => (piece ? { ...piece } : null))),
+    cols: position.cols,
+    rows: position.rows,
+    promotionZoneDepth: position.promotionZoneDepth,
+    turn: position.turn,
+    hands: { b: { ...position.hands.b }, w: { ...position.hands.w } },
+    handKinds: [...(position.handKinds || HAND_ORDER)],
+    moveNumber: position.moveNumber,
   };
 }
 
@@ -972,6 +1009,140 @@ function parseHands(text) {
     hands[side][char.toUpperCase()] = (hands[side][char.toUpperCase()] || 0) + amount;
   }
   return hands;
+}
+
+function parseImportedMoves(text, startPosition) {
+  const input = text.trim();
+  if (!input) {
+    return [];
+  }
+  if (looksLikeKif(input)) {
+    return parseKifRecord(input, clonePosition(startPosition));
+  }
+  return input.split(/[\s,]+/).filter(Boolean).map((usi) => ({ usi, label: usi }));
+}
+
+function looksLikeKif(text) {
+  return /(^|\n)\s*手数-+指手/.test(text) || /(^|\n)\s*\d+\s+(同|[１２３４５６７８９])/.test(text) || /開始日時：|棋戦：|手合割：/.test(text);
+}
+
+function parseKifRecord(text, position) {
+  const moves = [];
+  let previousTo = null;
+  text.split(/\r?\n/).forEach((line) => {
+    const match = line.match(/^\s*(\d+)\s+(.+?)\s*$/);
+    if (!match) {
+      return;
+    }
+    const notation = match[2].trim();
+    if (!notation || /^手数-+指手/.test(notation)) {
+      return;
+    }
+    if (/^(投了|詰み|中断|千日手|持将棋|反則勝ち|反則負け|入玉勝ち|切れ負け)/.test(notation)) {
+      return;
+    }
+    const parsed = parseKifNotation(notation, previousTo, position);
+    moves.push({ usi: parsed.usi, label: notation });
+    position = applyUsiMove(clonePosition(position), parsed.usi);
+    previousTo = parsed.to;
+  });
+  return moves;
+}
+
+function parseKifNotation(notation, previousTo, position) {
+  const normalized = notation.replace(/\s+/g, "").replace(/　+/g, "");
+  const match = normalized.match(/^(同|[１２３４５６７８９][一二三四五六七八九])(成銀|成桂|成香|と|龍|竜|馬|歩|香|桂|銀|金|角|飛|玉|王|杏|圭|全)(打|成|不成)?(?:\(([1-9][1-9])\))?$/);
+  if (!match) {
+    throw new Error(`Unsupported KIF move: ${notation}`);
+  }
+  const [, destinationText, pieceText, action = "", sourceText] = match;
+  const to = destinationText === "同" ? previousTo : kifDestinationToCoords(destinationText, position.cols);
+  if (!to) {
+    throw new Error(`Cannot resolve KIF destination: ${notation}`);
+  }
+  const kind = kifPieceToKind(pieceText);
+  if (action === "打") {
+    return {
+      usi: `${kind}*${coordsToShogiSquare(to.x, to.y, position.cols)}`,
+      to,
+    };
+  }
+  if (!sourceText) {
+    throw new Error(`KIF move is missing source square: ${notation}`);
+  }
+  const from = kifSourceToCoords(sourceText, position.cols);
+  const promote = action === "成" ? "+" : "";
+  return {
+    usi: `${coordsToShogiSquare(from.x, from.y, position.cols)}${coordsToShogiSquare(to.x, to.y, position.cols)}${promote}`,
+    to,
+  };
+}
+
+function kifDestinationToCoords(text, cols) {
+  const file = fullWidthDigitToNumber(text[0]);
+  const rank = japaneseRankToNumber(text[1]);
+  if (!file || !rank) {
+    return null;
+  }
+  return {
+    x: cols - file,
+    y: rank - 1,
+  };
+}
+
+function kifSourceToCoords(text, cols) {
+  return {
+    x: cols - Number(text[0]),
+    y: Number(text[1]) - 1,
+  };
+}
+
+function fullWidthDigitToNumber(char) {
+  return "０１２３４５６７８９".indexOf(char);
+}
+
+function japaneseRankToNumber(char) {
+  return "一二三四五六七八九".indexOf(char) + 1;
+}
+
+function kifPieceToKind(text) {
+  switch (text) {
+    case "歩":
+      return "P";
+    case "香":
+      return "L";
+    case "桂":
+      return "N";
+    case "銀":
+      return "S";
+    case "金":
+      return "G";
+    case "角":
+      return "B";
+    case "飛":
+      return "R";
+    case "玉":
+    case "王":
+      return "K";
+    case "と":
+      return "+P";
+    case "成香":
+    case "杏":
+      return "+L";
+    case "成桂":
+    case "圭":
+      return "+N";
+    case "成銀":
+    case "全":
+      return "+S";
+    case "馬":
+      return "+B";
+    case "龍":
+    case "竜":
+      return "+R";
+    default:
+      throw new Error(`Unsupported KIF piece: ${text}`);
+  }
 }
 
 function positionToSfen(position) {
@@ -1091,6 +1262,47 @@ function generateShogiMoves(position, x, y) {
     }
   });
   return moves;
+}
+
+function generateShogiDrops(position, kind) {
+  const moves = [];
+  for (let y = 0; y < position.rows; y += 1) {
+    for (let x = 0; x < position.cols; x += 1) {
+      if (position.board[y][x]) {
+        continue;
+      }
+      if (!isLegalDrop(position, kind, x, y)) {
+        continue;
+      }
+      moves.push({
+        to: { x, y },
+        usi: `${kind}*${coordsToShogiSquare(x, y, position.cols)}`,
+      });
+    }
+  }
+  return moves;
+}
+
+function isLegalDrop(position, kind, x, y) {
+  const side = position.turn;
+  if (kind === "P") {
+    if (side === "b" ? y === 0 : y === position.rows - 1) {
+      return false;
+    }
+    for (let row = 0; row < position.rows; row += 1) {
+      const square = position.board[row][x];
+      if (square?.side === side && square.kind === "P") {
+        return false;
+      }
+    }
+  }
+  if (kind === "L" && (side === "b" ? y === 0 : y === position.rows - 1)) {
+    return false;
+  }
+  if (kind === "N" && (side === "b" ? y <= 1 : y >= position.rows - 2)) {
+    return false;
+  }
+  return true;
 }
 
 function getPieceDirections(kind, forward) {
